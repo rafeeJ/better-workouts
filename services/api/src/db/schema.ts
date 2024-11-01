@@ -1,41 +1,82 @@
-import { pgTable, pgSchema, varchar, uuid, integer, serial, date } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  pgSchema,
+  varchar,
+  uuid,
+  integer,
+  serial,
+  date,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 
-const authSchema = pgSchema('auth');
+export const exercise_type = pgEnum("exercise_type", [
+  "biceps",
+  "triceps",
+  "chest",
+  "back",
+  "legs",
+  "shoulders",
+]);
 
-const users = authSchema.table('users', {
-	id: uuid('id').primaryKey(),
+const authSchema = pgSchema("auth");
+
+const users = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
 });
 
-export const exercises = pgTable('exercises', {
-	id: integer().primaryKey().generatedByDefaultAsIdentity(),
-	user_id: uuid().references(() => users.id).notNull(),
-	name: varchar({ length: 255 }).notNull(),
+export const exercises = pgTable("exercises", {
+  id: integer().primaryKey().generatedByDefaultAsIdentity(),
+  name: varchar({ length: 255 }).notNull(),
+  description: varchar({ length: 255 }),
+  type: exercise_type().notNull(),
 });
 
-export const presets = pgTable('presets', {
-	id: serial().primaryKey(),
-	user_id: uuid().references(() => users.id).notNull(),
-	name: varchar({ length: 255 }).notNull(),
-	description: varchar({ length: 255 }),
+export const presets = pgTable("presets", {
+  id: serial().primaryKey(),
+  user_id: uuid()
+    .references(() => users.id)
+    .notNull(),
+  name: varchar({ length: 255 }).notNull(),
+  description: varchar({ length: 255 }),
 });
 
-export const preset_exercises = pgTable('preset_exercises', {
-	id: serial().primaryKey(),
-	preset_id: integer().references(() => presets.id).notNull(),
-	exercise_id: integer().references(() => exercises.id).notNull(),
+export const preset_exercises = pgTable("preset_exercises", {
+  id: serial().primaryKey(),
+  preset_id: integer()
+    .references(() => presets.id)
+    .notNull(),
+  exercise_id: integer()
+    .references(() => exercises.id)
+    .notNull(),
 });
 
-export const workouts = pgTable('workouts', {
-	id: serial().primaryKey(),
-	user_id: uuid().references(() => users.id).notNull(),
-	workout_date: date().notNull(),
+export const workouts = pgTable("workouts", {
+  id: serial().primaryKey(),
+  user_id: uuid()
+    .references(() => users.id)
+    .notNull(),
+  workout_date: date().notNull(),
 });
 
-export const exercise_log = pgTable('exercise_log', {
-	id: serial().primaryKey(),
-	workout_id: integer().references(() => workouts.id).notNull(),
-	exercise_id: integer().references(() => exercises.id).notNull(),
-	weight: integer(),
-	reps: integer(),
-	sets: integer(),
+export const workout_exercises = pgTable("workout_exercises", {
+  id: serial().primaryKey(),
+  workout_id: integer()
+    .references(() => workouts.id)
+    .notNull(),
+  exercise_id: integer()
+    .references(() => exercises.id)
+    .notNull(),
+});
+
+export const exercise_log = pgTable("exercise_log", {
+  id: serial().primaryKey(),
+  workout_id: integer()
+    .references(() => workouts.id)
+    .notNull(),
+  exercise_id: integer()
+    .references(() => exercises.id)
+    .notNull(),
+  weight: integer(),
+  reps: integer(),
+  sets: integer(),
 });

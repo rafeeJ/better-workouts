@@ -3,7 +3,9 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "build": "tsc",
-    "watch": "tsc -w & nodemon --watch ./ --exec npm start"
+    "watch": "tsc -w & nodemon --watch ./ --exec npm start",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
     "@types/koa": "^2.15.0",
