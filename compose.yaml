@@ -1,0 +1,12 @@
+services:
+  api:
+    command: npm run watch
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./services/api:/server
