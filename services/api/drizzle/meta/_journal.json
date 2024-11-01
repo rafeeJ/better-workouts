@@ -8,6 +8,13 @@
       "when": 1730471567160,
       "tag": "0000_brainy_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1730493267914,
+      "tag": "0001_cheerful_chat",
+      "breakpoints": true
     }
   ]
 }
