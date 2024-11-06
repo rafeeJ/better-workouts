@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useUser } from "@/hooks/use-user";
+import { requireUser } from "@/utils/auth";
 
 type WorkoutExercise = {
   id: number;
@@ -21,14 +23,8 @@ interface WorkoutTableProps {
 }
 
 export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
+  const { user } = useUser();
   const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState({
-    weight: '',
-    reps: '',
-    sets: ''
-  });
-  const [isAdding, setIsAdding] = useState(false);
   const [newValues, setNewValues] = useState({
     weight: '',
     reps: '',
@@ -39,13 +35,13 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
     const fetchExercises = async () => {
       const supabase = createClient();
       const { data } = await supabase
-        .from('workout_exercises')
+        .from('workout_logs')
         .select(`
           id,
           weight,
           reps,
           sets,
-          workout:workouts(workout_date),
+          timestamp,
           exercise:exercises(id, name)
         `)
         .eq('exercise_id', exerciseId)
@@ -57,7 +53,7 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           weight: item.weight,
           reps: item.reps,
           sets: item.sets,
-          date: item.workout!.workout_date,
+          date: item.timestamp,
           name: item.exercise!.name
         }));
         setExercises(formattedExercises);
@@ -69,76 +65,66 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
     fetchExercises();
   }, [exerciseId]);
 
-  const handleEdit = (exercise: WorkoutExercise) => {
-    setEditingId(exercise.id);
-    setEditValues({
-      weight: exercise.weight?.toString() || '',
-      reps: exercise.reps?.toString() || '',
-      sets: exercise.sets?.toString() || ''
-    });
-  };
-
-  const handleSave = async (id: number) => {
+  // Add new function for auto-saving
+  const autoSave = async (id: number | null, values: typeof newValues) => {
+    if (!user) return;
+    
     const supabase = createClient();
     
     const updates = {
-      weight: editValues.weight ? parseFloat(editValues.weight) : null,
-      reps: editValues.reps ? parseInt(editValues.reps) : null,
-      sets: editValues.sets ? parseInt(editValues.sets) : null
+      weight: values.weight ? parseFloat(values.weight) : null,
+      reps: values.reps ? parseInt(values.reps) : null,
+      sets: values.sets ? parseInt(values.sets) : null
     };
 
-    const { data, error } = await supabase
-      .from('workout_exercises')
-      .update(updates)
-      .eq('id', id)
-      .select();
+    if (id === null) {
+      // This is a new entry
+      const newExercise = {
+        exercise_id: exerciseId,
+        user_id: user.id,
+        ...updates
+      };
 
-    if (data) {
-      setExercises(exercises.map(ex => 
-        ex.id === id ? { ...ex, ...updates } : ex
-      ));
-    }
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .insert(newExercise)
+        .select(`
+          id,
+          weight,
+          reps,
+          sets,
+          timestamp,
+          exercise:exercises(id, name)
+        `)
+        .single();
 
-    setEditingId(null);
-  };
-
-  const handleAdd = async () => {
-    const supabase = createClient();
-    
-    const newExercise = {
-      exercise_id: exerciseId,
-      workout_id: workoutId,
-      weight: newValues.weight ? parseFloat(newValues.weight) : null,
-      reps: newValues.reps ? parseInt(newValues.reps) : null,
-      sets: newValues.sets ? parseInt(newValues.sets) : null,
-    };
-
-    const { data, error } = await supabase
-      .from('workout_exercises')
-      .insert(newExercise)
-      .select(`
-        id,
-        weight,
-        reps,
-        sets,
-        workout:workouts(workout_date),
-        exercise:exercises(id, name)
-      `)
-      .single();
-
-    if (data) {
-      setExercises([{
-        id: data.id,
-        weight: data.weight,
-        reps: data.reps,
-        sets: data.sets,
-        date: data.workout!.workout_date,
-        name: data.exercise!.name
+      if (data) {
+        setExercises([{
+          id: data.id,
+          weight: data.weight,
+          reps: data.reps,
+          sets: data.sets,
+          date: data.timestamp,
+          name: data.exercise!.name
         }, ...exercises]);
-      setIsAdding(false);
-      setNewValues({ weight: '', reps: '', sets: '' });
+        setNewValues({ weight: '', reps: '', sets: '' });
+      }
+    } else {
+      // This is updating an existing entry
+      const { data, error } = await supabase
+            .from('workout_logs')
+        .update(updates)
+        .eq('id', id)
+        .select();
+
+      if (data) {
+        setExercises(exercises.map(ex => 
+          ex.id === id ? { ...ex, ...updates } : ex
+        ));
+      }
     }
   };
+
 
   return (
     <div className="rounded-md border">
@@ -149,139 +135,105 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
             <th className="h-12 px-4 text-left align-middle font-medium">Weight (kg)</th>
             <th className="h-12 px-4 text-left align-middle font-medium">Reps</th>
             <th className="h-12 px-4 text-left align-middle font-medium">Sets</th>
-            <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr className="border-b">
-            <td colSpan={5} className="p-4">
-              <Button 
-                variant="outline"
-                onClick={() => setIsAdding(true)}
-                disabled={isAdding}
-                className="w-full"
-              >
-                Add Entry
-              </Button>
+            <td className="p-4">
+              {format(new Date(), 'MMM d, yyyy')}
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.weight}
+                onChange={(e) => {
+                  setNewValues({...newValues, weight: e.target.value});
+                  if (e.target.value && newValues.reps && newValues.sets) {
+                    autoSave(null, {...newValues, weight: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.reps}
+                onChange={(e) => {
+                  setNewValues({...newValues, reps: e.target.value});
+                  if (newValues.weight && e.target.value && newValues.sets) {
+                    autoSave(null, {...newValues, reps: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.sets}
+                onChange={(e) => {
+                  setNewValues({...newValues, sets: e.target.value});
+                  if (newValues.weight && newValues.reps && e.target.value) {
+                    autoSave(null, {...newValues, sets: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
             </td>
           </tr>
-          {isAdding && (
-            <tr className="border-b">
-              <td className="p-4">
-                {format(new Date(), 'MMM d, yyyy')}
-              </td>
-              <td className="p-4">
-                <Input
-                  type="number"
-                  value={newValues.weight}
-                  onChange={(e) => setNewValues({...newValues, weight: e.target.value})}
-                  className="w-24"
-                />
-              </td>
-              <td className="p-4">
-                <Input
-                  type="number"
-                  value={newValues.reps}
-                  onChange={(e) => setNewValues({...newValues, reps: e.target.value})}
-                  className="w-24"
-                />
-              </td>
-              <td className="p-4">
-                <Input
-                  type="number"
-                  value={newValues.sets}
-                  onChange={(e) => setNewValues({...newValues, sets: e.target.value})}
-                  className="w-24"
-                />
-              </td>
-              <td className="p-4">
-                <div className="space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleAdd}
-                  >
-                    Save
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsAdding(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          )}
           {exercises.map((exercise) => (
             <tr key={exercise.id} className="border-b">
               <td className="p-4">
                 {format(new Date(exercise.date), 'MMM d, yyyy')}
               </td>
               <td className="p-4">
-                {editingId === exercise.id ? (
-                  <Input
-                    type="number"
-                    value={editValues.weight}
-                    onChange={(e) => setEditValues({...editValues, weight: e.target.value})}
-                    className="w-24"
-                  />
-                ) : (
-                  exercise.weight || "-"
-                )}
+                <MinimalInput
+                  type="number"
+                  value={exercise.weight || ''}
+                  onChange={(e) => {
+                    const updatedExercise = {...exercise, weight: e.target.value ? parseFloat(e.target.value) : null};
+                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
+                    autoSave(exercise.id, {
+                      weight: e.target.value,
+                      reps: exercise.reps?.toString() || '',
+                      sets: exercise.sets?.toString() || ''
+                    });
+                  }}
+                  placeholder="0"
+                />
               </td>
               <td className="p-4">
-                {editingId === exercise.id ? (
-                  <Input
-                    type="number" 
-                    value={editValues.reps}
-                    onChange={(e) => setEditValues({...editValues, reps: e.target.value})}
-                    className="w-24"
-                  />
-                ) : (
-                  exercise.reps || "-"
-                )}
+                <MinimalInput
+                  type="number"
+                  value={exercise.reps || ''}
+                  onChange={(e) => {
+                    const updatedExercise = {...exercise, reps: e.target.value ? parseInt(e.target.value) : null};
+                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
+                    autoSave(exercise.id, {
+                      weight: exercise.weight?.toString() || '',
+                      reps: e.target.value,
+                      sets: exercise.sets?.toString() || ''
+                    });
+                  }}
+                  placeholder="0"
+                />
               </td>
               <td className="p-4">
-                {editingId === exercise.id ? (
-                  <Input
-                    type="number"
-                    value={editValues.sets}
-                    onChange={(e) => setEditValues({...editValues, sets: e.target.value})}
-                    className="w-24"
-                  />
-                ) : (
-                  exercise.sets || "-"
-                )}
-              </td>
-              <td className="p-4">
-                {editingId === exercise.id ? (
-                  <div className="space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleSave(exercise.id)}
-                    >
-                      Save
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditingId(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleEdit(exercise)}
-                  >
-                    Edit
-                  </Button>
-                )}
+                <MinimalInput
+                  type="number"
+                  value={exercise.sets || ''}
+                  onChange={(e) => {
+                    const updatedExercise = {...exercise, sets: e.target.value ? parseInt(e.target.value) : null};
+                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
+                    autoSave(exercise.id, {
+                      weight: exercise.weight?.toString() || '',
+                      reps: exercise.reps?.toString() || '',
+                      sets: e.target.value
+                    });
+                  }}
+                  placeholder="0"
+                />
               </td>
             </tr>
           ))}
@@ -290,3 +242,15 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
     </div>
   );
 }
+
+function MinimalInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+    return (
+      <Input
+        {...props}
+        className={cn(
+          "h-auto w-20 border-none bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0",
+          className
+        )}
+      />
+    );
+  }

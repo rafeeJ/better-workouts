@@ -34,39 +34,40 @@ export const exercises = pgTable("exercises", {
 
 export const presets = pgTable("presets", {
   id: serial().primaryKey(),
-  user_id: uuid().notNull(),
+  userId: uuid('user_id').notNull(),
   name: varchar({ length: 255 }).notNull(),
   description: varchar({ length: 255 }),
 });
 
-export const preset_exercises = pgTable("preset_exercises", {
+export const presetExercises = pgTable("preset_exercises", {
   id: serial().primaryKey(),
-  preset_id: integer()
+  presetId: integer('preset_id')
     .references(() => presets.id)
     .notNull(),
-  exercise_id: integer()
+  exerciseId: integer('exercise_id')
     .references(() => exercises.id)
     .notNull(),
 });
 
 export const workouts = pgTable("workouts", {
   id: serial().primaryKey(),
-  user_id: uuid()
+  userId: uuid('user_id')
     .references(() => users.id)
     .notNull(),
   workout_date: date().notNull(),
-  created_from_preset_id: integer().references(() => presets.id),
-  created_at: timestamp().notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  presetId: integer('preset_id').references(() => presets.id).notNull(),
 });
 
-export const workout_exercises = pgTable("workout_exercises", {
+export const workoutLogs = pgTable("workout_logs", {
   id: serial().primaryKey(),
-  workout_id: integer()
-    .references(() => workouts.id)
+  userId: uuid('user_id')
+    .references(() => users.id)
     .notNull(),
-  exercise_id: integer()
+  exerciseId: integer('exercise_id')
     .references(() => exercises.id)
     .notNull(),
+  timestamp: timestamp().notNull().defaultNow(),
   sets: integer(),
   reps: integer(),
   weight: integer(),

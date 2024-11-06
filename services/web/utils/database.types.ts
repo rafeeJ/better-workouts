@@ -84,15 +84,16 @@ export type Database = {
         }
         Relationships: []
       }
-      workout_exercises: {
+      workout_logs: {
         Row: {
           exercise_id: number
           id: number
           notes: string | null
           reps: number | null
           sets: number | null
+          timestamp: string
+          user_id: string
           weight: number | null
-          workout_id: number
         }
         Insert: {
           exercise_id: number
@@ -100,8 +101,9 @@ export type Database = {
           notes?: string | null
           reps?: number | null
           sets?: number | null
+          timestamp?: string
+          user_id: string
           weight?: number | null
-          workout_id: number
         }
         Update: {
           exercise_id?: number
@@ -109,22 +111,16 @@ export type Database = {
           notes?: string | null
           reps?: number | null
           sets?: number | null
+          timestamp?: string
+          user_id?: string
           weight?: number | null
-          workout_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "workout_exercises_exercise_id_exercises_id_fk"
+            foreignKeyName: "workout_logs_exercise_id_exercises_id_fk"
             columns: ["exercise_id"]
             isOneToOne: false
             referencedRelation: "exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workout_exercises_workout_id_workouts_id_fk"
-            columns: ["workout_id"]
-            isOneToOne: false
-            referencedRelation: "workouts"
             referencedColumns: ["id"]
           },
         ]
@@ -132,29 +128,29 @@ export type Database = {
       workouts: {
         Row: {
           created_at: string
-          created_from_preset_id: number | null
           id: number
+          preset_id: number
           user_id: string
           workout_date: string
         }
         Insert: {
           created_at?: string
-          created_from_preset_id?: number | null
           id?: number
+          preset_id: number
           user_id: string
           workout_date: string
         }
         Update: {
           created_at?: string
-          created_from_preset_id?: number | null
           id?: number
+          preset_id?: number
           user_id?: string
           workout_date?: string
         }
         Relationships: [
           {
-            foreignKeyName: "workouts_created_from_preset_id_presets_id_fk"
-            columns: ["created_from_preset_id"]
+            foreignKeyName: "workouts_preset_id_presets_id_fk"
+            columns: ["preset_id"]
             isOneToOne: false
             referencedRelation: "presets"
             referencedColumns: ["id"]

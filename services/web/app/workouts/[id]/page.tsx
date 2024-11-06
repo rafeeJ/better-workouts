@@ -4,10 +4,10 @@ import Link from "next/link";
 import { WorkoutTable } from "@/components/workouts/workout-table";
 
 interface PageProps {
-    params: Promise<{
-      id: string;
-    }>;
-  }
+  params: Promise<{
+    id: string;
+  }>;
+}
 
 export default async function WorkoutPage({ params }: PageProps) {
   const supabase = await createClient();
@@ -19,29 +19,30 @@ export default async function WorkoutPage({ params }: PageProps) {
     redirect('/sign-in');
   }
 
-  // Get workout with exercises
+  // Get workout with preset information and logs
   const { data: workout, error } = await supabase
     .from("workouts")
     .select(`
-      *,
-      workout_exercises(
-        id,
-        weight,
-        reps,
-        sets,
-        exercise: exercises(
-          id,
-          name
-        )
-      ),
-      preset:presets!created_from_preset_id(
+      id,
+      workout_date,
+      created_at,
+      preset:presets(
         id,
         name,
         preset_exercises(
           id,
           exercise:exercises(
             id,
-            name
+            name,
+            type,
+            workout_logs(
+              id,
+              weight,
+              reps,
+              sets,
+              notes,
+              timestamp
+            )
           )
         )
       )
@@ -51,8 +52,20 @@ export default async function WorkoutPage({ params }: PageProps) {
     .single();
 
   if (error || !workout) {
+    console.error(error);
     notFound();
   }
+
+  // Transform the data for easier rendering
+  const exercises = workout.preset?.preset_exercises.map((pe: any) => ({
+    id: pe.id,
+    exercise: pe.exercise,
+    logs: pe.exercise.workout_logs.filter((log: any) => 
+      log.user_id === user.id
+    ).sort((a: any, b: any) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+  })) || [];
 
   return (
     <div className="container py-8">
@@ -88,17 +101,23 @@ export default async function WorkoutPage({ params }: PageProps) {
                   </p>
                 )}
               </div>
-              <span className="text-sm text-muted-foreground">
-                Created by: {user.email}
-              </span>
             </div>
 
             <div className="border-t pt-4 mt-4">
               <div className="space-y-8">
-                {(workout.preset?.preset_exercises || workout.workout_exercises).map((exercise: any) => (
-                  <div key={exercise.id}>
-                    <h3 className="text-lg font-medium mb-4">{exercise.exercise.name}</h3>
-                    <WorkoutTable exerciseId={exercise.exercise.id} workoutId={workout.id} />
+                {exercises.map((item: any) => (
+                  <div key={item.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-medium">{item.exercise.name}</h3>
+                      <span className="text-sm text-muted-foreground">
+                        ({item.exercise.type})
+                      </span>
+                    </div>
+                    <WorkoutTable 
+                      exerciseId={item.exercise.id} 
+                      workoutId={workout.id}
+                      logs={item.logs}
+                    />
                   </div>
                 ))}
               </div>

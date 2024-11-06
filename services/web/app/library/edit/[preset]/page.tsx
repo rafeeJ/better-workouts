@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
 import { AvailableExercises } from "@/components/library/available-exercises";
 import { revalidatePath } from "next/cache";
-import { deletePresetExercise } from "@/app/actions"
+import { deletePresetExercise, deletePreset } from "@/app/actions"
 
 interface PageProps {
   params: Promise<{
@@ -71,9 +71,24 @@ export default async function PresetPage({ params }: PageProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">{preset_data.name}</h1>
-              <span className="text-sm text-muted-foreground">
-                Created by: {user.email}
-              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Created by: {user.email}
+                </span>
+                <form action={async () => {
+                  'use server'
+                  await deletePreset(preset_data.id)
+                }}>
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
             </div>
 
             {preset_data.description && (
