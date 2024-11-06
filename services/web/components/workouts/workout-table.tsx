@@ -138,51 +138,7 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b">
-            <td className="p-4">
-              {format(new Date(), 'MMM d, yyyy')}
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.weight}
-                onChange={(e) => {
-                  setNewValues({...newValues, weight: e.target.value});
-                  if (e.target.value && newValues.reps && newValues.sets) {
-                    autoSave(null, {...newValues, weight: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.reps}
-                onChange={(e) => {
-                  setNewValues({...newValues, reps: e.target.value});
-                  if (newValues.weight && e.target.value && newValues.sets) {
-                    autoSave(null, {...newValues, reps: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.sets}
-                onChange={(e) => {
-                  setNewValues({...newValues, sets: e.target.value});
-                  if (newValues.weight && newValues.reps && e.target.value) {
-                    autoSave(null, {...newValues, sets: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-          </tr>
-          {exercises.map((exercise) => (
+          {exercises.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exercise) => (
             <tr key={exercise.id} className="border-b">
               <td className="p-4">
                 {format(new Date(exercise.date), 'MMM d, yyyy')}
@@ -237,6 +193,50 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
               </td>
             </tr>
           ))}
+          <tr className="border-b">
+            <td className="p-4">
+              {format(new Date(), 'MMM d, yyyy')}
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.weight}
+                onChange={(e) => {
+                  setNewValues({...newValues, weight: e.target.value});
+                  if (e.target.value && newValues.reps && newValues.sets) {
+                    autoSave(null, {...newValues, weight: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.reps}
+                onChange={(e) => {
+                  setNewValues({...newValues, reps: e.target.value});
+                  if (newValues.weight && e.target.value && newValues.sets) {
+                    autoSave(null, {...newValues, reps: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
+            </td>
+            <td className="p-4">
+              <MinimalInput
+                type="number"
+                value={newValues.sets}
+                onChange={(e) => {
+                  setNewValues({...newValues, sets: e.target.value});
+                  if (newValues.weight && newValues.reps && e.target.value) {
+                    autoSave(null, {...newValues, sets: e.target.value});
+                  }
+                }}
+                placeholder="0"
+              />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
