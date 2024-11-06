@@ -4,6 +4,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from 'next/cache'
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -128,3 +129,22 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export async function revalidatePreset(presetId: string) {
+  revalidatePath(`/library/edit/${presetId}`)
+}
+
+export async function deletePresetExercise(presetExerciseId: string, presetId: string) {
+  const supabase = await createClient()
+  
+  const { error } = await supabase
+    .from('preset_exercises')
+    .delete()
+    .eq('id', presetExerciseId)
+
+  if (!error) {
+    revalidatePath(`/library/edit/${presetId}`)
+  }
+
+  return { error }
+}

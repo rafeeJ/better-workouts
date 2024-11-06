@@ -7,6 +7,7 @@ import {
   serial,
   date,
   pgEnum,
+  timestamp,
 } from "drizzle-orm/pg-core";
 
 export const exercise_type = pgEnum("exercise_type", [
@@ -33,9 +34,7 @@ export const exercises = pgTable("exercises", {
 
 export const presets = pgTable("presets", {
   id: serial().primaryKey(),
-  user_id: uuid()
-    .references(() => users.id)
-    .notNull(),
+  user_id: uuid().notNull(),
   name: varchar({ length: 255 }).notNull(),
   description: varchar({ length: 255 }),
 });
@@ -56,6 +55,8 @@ export const workouts = pgTable("workouts", {
     .references(() => users.id)
     .notNull(),
   workout_date: date().notNull(),
+  created_from_preset_id: integer().references(() => presets.id),
+  created_at: timestamp().notNull().defaultNow(),
 });
 
 export const workout_exercises = pgTable("workout_exercises", {
@@ -66,17 +67,8 @@ export const workout_exercises = pgTable("workout_exercises", {
   exercise_id: integer()
     .references(() => exercises.id)
     .notNull(),
-});
-
-export const exercise_log = pgTable("exercise_log", {
-  id: serial().primaryKey(),
-  workout_id: integer()
-    .references(() => workouts.id)
-    .notNull(),
-  exercise_id: integer()
-    .references(() => exercises.id)
-    .notNull(),
-  weight: integer(),
-  reps: integer(),
   sets: integer(),
+  reps: integer(),
+  weight: integer(),
+  notes: varchar({ length: 255 }),
 });
