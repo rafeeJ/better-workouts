@@ -22,13 +22,13 @@ export const PresetList = async () => {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border w-full">
       <table className="w-full">
         <thead className="bg-muted/50">
           <tr className="border-b">
             <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
             <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
-            <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
+            <th className="h-12 px-4 text-right align-middle font-medium">Edit</th>
           </tr>
         </thead>
         <tbody>
@@ -41,11 +41,6 @@ export const PresetList = async () => {
                   <Link href={`/library/edit/${preset.id}`}>
                     <Button variant="ghost" size="sm">
                       <Pencil className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href={`/library/view/${preset.id}`}>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
                 </div>

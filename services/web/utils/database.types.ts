@@ -9,48 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      exercise_log: {
-        Row: {
-          exercise_id: number
-          id: number
-          reps: number | null
-          sets: number | null
-          weight: number | null
-          workout_id: number
-        }
-        Insert: {
-          exercise_id: number
-          id?: number
-          reps?: number | null
-          sets?: number | null
-          weight?: number | null
-          workout_id: number
-        }
-        Update: {
-          exercise_id?: number
-          id?: number
-          reps?: number | null
-          sets?: number | null
-          weight?: number | null
-          workout_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exercise_log_exercise_id_exercises_id_fk"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "exercise_log_workout_id_workouts_id_fk"
-            columns: ["workout_id"]
-            isOneToOne: false
-            referencedRelation: "workouts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       exercises: {
         Row: {
           description: string | null
@@ -130,16 +88,28 @@ export type Database = {
         Row: {
           exercise_id: number
           id: number
+          notes: string | null
+          reps: number | null
+          sets: number | null
+          weight: number | null
           workout_id: number
         }
         Insert: {
           exercise_id: number
           id?: number
+          notes?: string | null
+          reps?: number | null
+          sets?: number | null
+          weight?: number | null
           workout_id: number
         }
         Update: {
           exercise_id?: number
           id?: number
+          notes?: string | null
+          reps?: number | null
+          sets?: number | null
+          weight?: number | null
           workout_id?: number
         }
         Relationships: [
@@ -161,21 +131,35 @@ export type Database = {
       }
       workouts: {
         Row: {
+          created_at: string
+          created_from_preset_id: number | null
           id: number
           user_id: string
           workout_date: string
         }
         Insert: {
+          created_at?: string
+          created_from_preset_id?: number | null
           id?: number
           user_id: string
           workout_date: string
         }
         Update: {
+          created_at?: string
+          created_from_preset_id?: number | null
           id?: number
           user_id?: string
           workout_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workouts_created_from_preset_id_presets_id_fk"
+            columns: ["created_from_preset_id"]
+            isOneToOne: false
+            referencedRelation: "presets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
