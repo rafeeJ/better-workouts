@@ -25,15 +25,17 @@ interface WorkoutTableProps {
 export function WorkoutTable({ exerciseId }: WorkoutTableProps) {
   const { user } = useUser();
   const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
-  const [newValues, setNewValues] = useState({
+  const [values, setValues] = useState({
     weight: '',
     reps: '',
     sets: ''
   });
+  const [lastEntry, setLastEntry] = useState<WorkoutExercise | null>(null);
 
   useEffect(() => {
     const fetchExercises = async () => {
       const supabase = createClient();
+      
       const { data } = await supabase
         .from('workout_logs')
         .select(`
@@ -46,213 +48,105 @@ export function WorkoutTable({ exerciseId }: WorkoutTableProps) {
           exercise:exercises(id, name)
         `)
         .eq('exercise_id', exerciseId)
+        .order('date', { ascending: false })
+        .limit(1);
         
-      if (data) {
-        const formattedExercises = data.map(item => ({
-          id: item.id,
-          weight: item.weight,
-          reps: item.reps,
-          sets: item.sets,
-          date: item.date,
-          notes: item.notes,
-          name: item.exercise!.name
-        }));
-        setExercises(formattedExercises);
+      if (data && data[0]) {
+        setLastEntry(data[0]);
       }
     };
 
     fetchExercises();
   }, [exerciseId]);
 
-  // Add new function for auto-saving
-  const autoSave = async (id: number | null, values: typeof newValues) => {
-    if (!user) return;
+  const handleSubmit = async () => {
+    if (!user || !values.weight || !values.reps || !values.sets) return;
     
     const supabase = createClient();
     
-    const updates = {
-      weight: values.weight ? parseInt(values.weight) : null,
-      reps: values.reps ? parseInt(values.reps) : null,
-      sets: values.sets ? parseInt(values.sets) : null,
+    const newExercise = {
+      exercise_id: exerciseId,
+      user_id: user.id,
+      weight: parseInt(values.weight),
+      reps: parseInt(values.reps),
+      sets: parseInt(values.sets),
       date: new Date().toISOString().split('T')[0]
     };
 
-    if (id === null) {
-      // This is a new entry
-      const newExercise = {
-        exercise_id: exerciseId,
-        user_id: user.id,
-        ...updates
-      };
+    const { data, error } = await supabase
+      .from('workout_logs')
+      .insert(newExercise)
+      .select()
+      .single();
 
-      const { data, error } = await supabase
-        .from('workout_logs')
-        .insert(newExercise)
-        .select(`
-          id,
-          weight,
-          reps,
-          sets,
-          date,
-          notes,
-          exercise:exercises(id, name)
-        `)
-        .single();
-
-      if (data) {
-        setExercises([{
-          id: data.id,
-          weight: data.weight,
-          reps: data.reps,
-          sets: data.sets,
-          date: data.date,
-          notes: data.notes,
-          name: data.exercise!.name
-        }, ...exercises]);
-        setNewValues({ weight: '', reps: '', sets: '' });
-      }
-    } else {
-      // This is updating an existing entry
-      const { data, error } = await supabase
-            .from('workout_logs')
-        .update(updates)
-        .eq('id', id)
-        .select();
-
-      if (data) {
-        setExercises(exercises.map(ex => 
-          ex.id === id ? { ...ex, ...updates } : ex
-        ));
-      }
+    if (data) {
+      setLastEntry({
+        id: data.id,
+        weight: data.weight,
+        reps: data.reps,
+        sets: data.sets,
+        date: data.date,
+        notes: data.notes,
+        name: lastEntry?.name || ''
+      });
+      setValues({ weight: '', reps: '', sets: '' });
     }
   };
 
-
   return (
-    <div className="rounded-md border">
-      <table className="w-full">
-        <thead className="bg-muted/50">
-          <tr className="border-b">
-            <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
-            <th className="h-12 px-4 text-left align-middle font-medium">Weight (kg)</th>
-            <th className="h-12 px-4 text-left align-middle font-medium">Reps</th>
-            <th className="h-12 px-4 text-left align-middle font-medium">Sets</th>
-          </tr>
-        </thead>
-        <tbody>
-          {exercises.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exercise) => (
-            <tr key={exercise.id} className="border-b">
-              <td className="p-4">
-                {format(new Date(exercise.date), 'MMM d, yyyy')}
-              </td>
-              <td className="p-4">
-                <MinimalInput
-                  type="number"
-                  value={exercise.weight || ''}
-                  onChange={(e) => {
-                    const updatedExercise = {...exercise, weight: e.target.value ? parseFloat(e.target.value) : null};
-                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
-                    autoSave(exercise.id, {
-                      weight: e.target.value,
-                      reps: exercise.reps?.toString() || '',
-                      sets: exercise.sets?.toString() || ''
-                    });
-                  }}
-                  placeholder="0"
-                />
-              </td>
-              <td className="p-4">
-                <MinimalInput
-                  type="number"
-                  value={exercise.reps || ''}
-                  onChange={(e) => {
-                    const updatedExercise = {...exercise, reps: e.target.value ? parseInt(e.target.value) : null};
-                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
-                    autoSave(exercise.id, {
-                      weight: exercise.weight?.toString() || '',
-                      reps: e.target.value,
-                      sets: exercise.sets?.toString() || ''
-                    });
-                  }}
-                  placeholder="0"
-                />
-              </td>
-              <td className="p-4">
-                <MinimalInput
-                  type="number"
-                  value={exercise.sets || ''}
-                  onChange={(e) => {
-                    const updatedExercise = {...exercise, sets: e.target.value ? parseInt(e.target.value) : null};
-                    setExercises(exercises.map(ex => ex.id === exercise.id ? updatedExercise : ex));
-                    autoSave(exercise.id, {
-                      weight: exercise.weight?.toString() || '',
-                      reps: exercise.reps?.toString() || '',
-                      sets: e.target.value
-                    });
-                  }}
-                  placeholder="0"
-                />
-              </td>
-            </tr>
-          ))}
-          <tr className="border-b">
-            <td className="p-4">
-              {format(new Date(), 'MMM d, yyyy')}
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.weight}
-                onChange={(e) => {
-                  setNewValues({...newValues, weight: e.target.value});
-                  if (e.target.value && newValues.reps && newValues.sets) {
-                    autoSave(null, {...newValues, weight: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.reps}
-                onChange={(e) => {
-                  setNewValues({...newValues, reps: e.target.value});
-                  if (newValues.weight && e.target.value && newValues.sets) {
-                    autoSave(null, {...newValues, reps: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-            <td className="p-4">
-              <MinimalInput
-                type="number"
-                value={newValues.sets}
-                onChange={(e) => {
-                  setNewValues({...newValues, sets: e.target.value});
-                  if (newValues.weight && newValues.reps && e.target.value) {
-                    autoSave(null, {...newValues, sets: e.target.value});
-                  }
-                }}
-                placeholder="0"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="space-y-6 p-4 bg-card rounded-lg border shadow-sm">
+      {lastEntry && (
+        <div className="text-sm text-muted-foreground">
+          <p>Last entry ({format(new Date(lastEntry.date), 'MMM d, yyyy')})</p>
+          <div className="flex gap-4 mt-1">
+            <span>{lastEntry.weight}kg</span>
+            <span>×</span>
+            <span>{lastEntry.reps} reps</span>
+            <span>×</span>
+            <span>{lastEntry.sets} sets</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Weight (kg)</label>
+            <Input
+              type="number"
+              value={values.weight}
+              onChange={(e) => setValues({...values, weight: e.target.value})}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Reps</label>
+            <Input
+              type="number"
+              value={values.reps}
+              onChange={(e) => setValues({...values, reps: e.target.value})}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Sets</label>
+            <Input
+              type="number"
+              value={values.sets}
+              onChange={(e) => setValues({...values, sets: e.target.value})}
+              placeholder="0"
+            />
+          </div>
+        </div>
+        
+        <button
+          onClick={handleSubmit}
+          disabled={!values.weight || !values.reps || !values.sets}
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Log Exercise
+        </button>
+      </div>
     </div>
   );
 }
-
-function MinimalInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-    return (
-      <Input
-        {...props}
-        className={cn(
-          "h-auto w-20 border-none bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0",
-          className
-        )}
-      />
-    );
-  }
