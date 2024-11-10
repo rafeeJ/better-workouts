@@ -34,6 +34,7 @@ export default function WorkoutCalendar() {
     const [presets, setPresets] = useState<Preset[]>([]);
     const { user, loading: userLoading } = useUser();
     const [monthWorkouts, setMonthWorkouts] = useState<string[]>([]);
+    const [streaks, setStreaks] = useState<{ [key: string]: number }>({});
   
     const router = useRouter();
   
@@ -49,7 +50,22 @@ export default function WorkoutCalendar() {
           .gte('workout_date', startDate)
           .lte('workout_date', endDate);
         
-        setMonthWorkouts(data?.map(w => w.workout_date) || []);
+        const workoutDates = data?.map(w => w.workout_date) || [];
+        setMonthWorkouts(workoutDates);
+
+        // Calculate streaks
+        const streakMap: { [key: string]: number } = {};
+        workoutDates.sort().forEach((date, index) => {
+          const currentDate = new Date(date);
+          const prevDate = index > 0 ? new Date(workoutDates[index - 1]) : null;
+          
+          if (prevDate && (currentDate.getTime() - prevDate.getTime()) === 86400000) { // 24 hours in milliseconds
+            streakMap[date] = (streakMap[workoutDates[index - 1]] || 1) + 1;
+          } else {
+            streakMap[date] = 1;
+          }
+        });
+        setStreaks(streakMap);
       };
   
       fetchMonthWorkouts();
@@ -152,21 +168,43 @@ export default function WorkoutCalendar() {
               <div key={`empty-${index}`} className="p-2" />
             ))}
             
-            {Array.from({ length: daysInMonth }).map((_, index) => (
-              <div
-                key={index + 1}
-                onClick={() => handleDateClick(index + 1)}
-                className={`p-2 border rounded-md hover:bg-muted/50 cursor-pointer text-center relative
-                  ${isToday(index + 1) ? 'bg-muted border-primary' : ''}`}
-              >
-                {index + 1}
-                {monthWorkouts.includes(
-                  format(new Date(currentDate.getFullYear(), currentDate.getMonth(), index + 1), 'yyyy-MM-dd')
-                ) && (
-                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                )}
-              </div>
-            ))}
+            {Array.from({ length: daysInMonth }).map((_, index) => {
+              const currentDateStr = format(
+                new Date(currentDate.getFullYear(), currentDate.getMonth(), index + 1),
+                'yyyy-MM-dd'
+              );
+              const streakCount = streaks[currentDateStr] || 0;
+              
+              // Check if this is the last day of a streak
+              const nextDateStr = format(
+                new Date(currentDate.getFullYear(), currentDate.getMonth(), index + 2),
+                'yyyy-MM-dd'
+              );
+              const isLastDayOfStreak = streakCount > 1 && !streaks[nextDateStr];
+              
+              return (
+                <div
+                  key={index + 1}
+                  onClick={() => handleDateClick(index + 1)}
+                  className={`p-2 border rounded-md hover:bg-muted/50 cursor-pointer text-center relative
+                    ${isToday(index + 1) ? 'bg-muted border-primary' : ''}
+                    ${streakCount > 0 ? 'bg-red-50' : ''}
+                    ${streakCount > 1 ? 'border-red-200' : ''}`}
+                >
+                  {index + 1}
+                  {monthWorkouts.includes(currentDateStr) && (
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
+                      <div className="w-1 h-1 bg-red-400 rounded-full" />
+                      {isLastDayOfStreak && (
+                        <div className="text-xs absolute -right-6 whitespace-nowrap">
+                          🔥{streakCount}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
   
