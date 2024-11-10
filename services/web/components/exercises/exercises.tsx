@@ -5,7 +5,8 @@ import { getExercises } from "@/queries/get-exercises";
 import { createClient } from "@/utils/supabase/client";
 import { ExerciseTypeFilter } from "../library/available-exercises-filter";
 import { useRouter } from "next/navigation";
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export const Exercises = () => {
   const router = useRouter();
@@ -27,45 +28,66 @@ export const Exercises = () => {
       </div>
 
       <div className="rounded-md border">
-        <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr className="border-b">
-              <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
-              <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
-              <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
-              <th className="h-12 px-4 text-left align-middle font-medium" />
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="hidden md:table-cell">Type</TableHead>
+              <TableHead className="hidden lg:table-cell">Description</TableHead>
+              <TableHead className="w-[100px]">Progress</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {isLoading ? (
-              <tr>
-                <td colSpan={3} className="p-4 text-center">Loading...</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24">
+                  Loading...
+                </TableCell>
+              </TableRow>
             ) : exercises.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="p-4 text-center text-muted-foreground">
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                   Select a type to view exercises
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               exercises.map((exercise) => (
-                <tr key={exercise.id} className="border-b">
-                  <td className="p-4">{exercise.name}</td>
-                  <td className="p-4 capitalize">{exercise.type}</td>
-                  <td className="p-4">{exercise.description || "-"}</td>
-                  <td className="p-4">
+                <TableRow 
+                  key={exercise.id}
+                  className="group cursor-pointer"
+                  onClick={() => router.push(`/exercises/${exercise.id}`)}
+                >
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{exercise.name}</span>
+                      {/* Show type on mobile as subtitle */}
+                      <span className="text-sm text-muted-foreground md:hidden">
+                        {exercise.type}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell capitalize">
+                    {exercise.type}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {exercise.description || "-"}
+                  </TableCell>
+                  <TableCell>
                     <button
-                      onClick={() => router.push(`/exercises/${exercise.id}`)}
-                      className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                      className={cn(
+                        "px-3 py-1 text-sm rounded-md w-full",
+                        "bg-primary text-primary-foreground",
+                        "group-hover:bg-primary/90 transition-colors"
+                      )}
                     >
-                      View Progress
+                      View
                     </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
