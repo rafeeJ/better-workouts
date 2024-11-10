@@ -10,15 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/use-user";
 import { requireUser } from "@/utils/auth";
+import { cn } from "@/lib/utils";
 
 type Workout = {
   id: number;
   workout_date: string;
-  preset_id: number;
+  preset: {
+    id: number;
+    name: string;
+  } | null;
 };
 
 type Preset = {
@@ -33,7 +37,7 @@ export default function WorkoutCalendar() {
     const [isLoading, setIsLoading] = useState(false);
     const [presets, setPresets] = useState<Preset[]>([]);
     const { user, loading: userLoading } = useUser();
-    const [monthWorkouts, setMonthWorkouts] = useState<string[]>([]);
+    const [monthWorkouts, setMonthWorkouts] = useState<Workout[]>([]);
     const [streaks, setStreaks] = useState<{ [key: string]: number }>({});
   
     const router = useRouter();
@@ -46,21 +50,27 @@ export default function WorkoutCalendar() {
         const supabase = createClient();
         const { data } = await supabase
           .from('workouts')
-          .select('workout_date')
+          .select(`
+            id,
+            workout_date,
+            preset:preset_id (
+              id,
+              name
+            )
+          `)
           .gte('workout_date', startDate)
           .lte('workout_date', endDate);
         
-        const workoutDates = data?.map(w => w.workout_date) || [];
-        setMonthWorkouts(workoutDates);
+        setMonthWorkouts(data || []);
 
         // Calculate streaks
         const streakMap: { [key: string]: number } = {};
-        workoutDates.sort().forEach((date, index) => {
+        data?.map(w => w.workout_date).sort().forEach((date, index) => {
           const currentDate = new Date(date);
-          const prevDate = index > 0 ? new Date(workoutDates[index - 1]) : null;
+          const prevDate = index > 0 ? new Date(data[index - 1].workout_date) : null;
           
           if (prevDate && (currentDate.getTime() - prevDate.getTime()) === 86400000) { // 24 hours in milliseconds
-            streakMap[date] = (streakMap[workoutDates[index - 1]] || 1) + 1;
+            streakMap[date] = (streakMap[data[index - 1].workout_date] || 1) + 1;
           } else {
             streakMap[date] = 1;
           }
@@ -142,64 +152,126 @@ export default function WorkoutCalendar() {
       }
     };
   
+    const isPartOfStreak = (dateStr: string) => {
+      const prevDay = format(addDays(new Date(dateStr), -1), 'yyyy-MM-dd');
+      const nextDay = format(addDays(new Date(dateStr), 1), 'yyyy-MM-dd');
+      return streaks[dateStr] && (streaks[prevDay] || streaks[nextDay]);
+    };
+  
     return (
-      <div className="container">
-        <div className="rounded-md border p-4">
-          <div className="flex justify-between items-center mb-4">
-            <Button variant="ghost" onClick={previousMonth}>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-9 w-9"
+              onClick={previousMonth}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-lg font-semibold">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <Button variant="ghost" onClick={nextMonth}>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-9 w-9"
+              onClick={nextMonth}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-  
-          <div className="grid grid-cols-7 gap-1">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center font-medium p-2">
-                {day}
+        </div>
+
+        <div className="rounded-lg border bg-card overflow-hidden">
+          {/* Day headers - hide abbreviated versions on mobile */}
+          <div className="grid grid-cols-7 border-b">
+            {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
+              <div 
+                key={day} 
+                className="px-2 py-3 text-center text-sm font-medium text-muted-foreground"
+              >
+                <span className="hidden sm:block">{day}</span>
+                <span className="sm:hidden">{day.slice(0, 3)}</span>
               </div>
             ))}
-            
+          </div>
+          
+          <div className="grid grid-cols-7">
             {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-              <div key={`empty-${index}`} className="p-2" />
+              <div key={`empty-${index}`} className="border-b border-r min-h-[60px] sm:min-h-[120px] lg:min-h-[140px]" />
             ))}
             
             {Array.from({ length: daysInMonth }).map((_, index) => {
+              const dayNumber = index + 1;
               const currentDateStr = format(
-                new Date(currentDate.getFullYear(), currentDate.getMonth(), index + 1),
+                new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber),
                 'yyyy-MM-dd'
               );
+              const dayWorkouts = monthWorkouts.filter(w => w.workout_date === currentDateStr);
               const streakCount = streaks[currentDateStr] || 0;
-              
-              // Check if this is the last day of a streak
-              const nextDateStr = format(
-                new Date(currentDate.getFullYear(), currentDate.getMonth(), index + 2),
-                'yyyy-MM-dd'
-              );
-              const isLastDayOfStreak = streakCount > 1 && !streaks[nextDateStr];
+              const isCurrentDay = isToday(dayNumber);
+              const hasWorkouts = dayWorkouts.length > 0;
+              const inStreak = isPartOfStreak(currentDateStr);
               
               return (
                 <div
-                  key={index + 1}
-                  onClick={() => handleDateClick(index + 1)}
-                  className={`p-2 border rounded-md hover:bg-muted/50 cursor-pointer text-center relative
-                    ${isToday(index + 1) ? 'bg-muted border-primary' : ''}
-                    ${streakCount > 0 ? 'bg-red-50' : ''}
-                    ${streakCount > 1 ? 'border-red-200' : ''}`}
+                  key={dayNumber}
+                  onClick={() => handleDateClick(dayNumber)}
+                  className={cn(
+                    "relative border-b border-r min-h-[60px] sm:min-h-[120px] lg:min-h-[140px] p-2",
+                    "transition-colors cursor-pointer",
+                    "hover:bg-accent/50",
+                    hasWorkouts && "bg-primary/5",
+                    isCurrentDay && "bg-accent",
+                    // Streak border styling
+                    inStreak && "border-red-500/50",
+                    streakCount > 0 && !inStreak && "border-red-500/50 rounded-l",
+                    streakCount > 0 && !streaks[format(addDays(new Date(currentDateStr), 1), 'yyyy-MM-dd')] && "rounded-r",
+                    // Increase border width for streak days
+                    streakCount > 0 && "border-2",
+                  )}
                 >
-                  {index + 1}
-                  {monthWorkouts.includes(currentDateStr) && (
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
-                      <div className="w-1 h-1 bg-red-400 rounded-full" />
-                      {isLastDayOfStreak && (
-                        <div className="text-xs absolute -right-6 whitespace-nowrap">
-                          🔥{streakCount}
-                        </div>
+                  <div className="absolute top-2 left-2 flex items-center gap-1">
+                    <time
+                      dateTime={currentDateStr}
+                      className={cn(
+                        "flex items-center justify-center",
+                        "h-6 w-6 rounded-full text-sm",
+                        isCurrentDay && "bg-primary text-primary-foreground font-bold",
+                        !isCurrentDay && hasWorkouts && "font-medium"
                       )}
+                    >
+                      {dayNumber}
+                    </time>
+                    {streakCount > 1 && !streaks[format(addDays(new Date(currentDateStr), 1), 'yyyy-MM-dd')] && (
+                      <span className="text-sm">🔥{streakCount}</span>
+                    )}
+                  </div>
+                  
+                  {/* Only show workouts on larger screens */}
+                  <div className="hidden sm:block mt-8 space-y-1">
+                    {dayWorkouts.map((workout) => (
+                      <div 
+                        key={workout.id}
+                        className={cn(
+                          "text-xs px-1.5 py-1 rounded-md",
+                          "bg-primary text-primary-foreground",
+                          "hover:bg-primary/80 transition-colors",
+                          "truncate"
+                        )}
+                        title={workout.preset?.name || "Custom Workout"}
+                      >
+                        {workout.preset?.name || "Custom Workout"}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Show a small indicator dot on mobile */}
+                  {hasWorkouts && (
+                    <div className="absolute bottom-1 right-1 sm:hidden">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                     </div>
                   )}
                 </div>
@@ -207,7 +279,7 @@ export default function WorkoutCalendar() {
             })}
           </div>
         </div>
-  
+
         <Dialog open={selectedDate !== null} onOpenChange={() => setSelectedDate(null)}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
