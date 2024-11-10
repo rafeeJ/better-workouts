@@ -139,12 +139,6 @@ export default async function PresetPage({ params }: PageProps) {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Exercise
-                </Button>
-              </div>
             </div>
           </div>
         </div>

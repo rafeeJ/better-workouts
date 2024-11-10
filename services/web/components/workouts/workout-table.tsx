@@ -14,15 +14,15 @@ type WorkoutExercise = {
   reps: number | null; 
   sets: number | null;
   date: string;
+  notes: string | null;
   name: string;
 };
 
 interface WorkoutTableProps {
   exerciseId: number;
-  workoutId: number;
 }
 
-export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
+export function WorkoutTable({ exerciseId }: WorkoutTableProps) {
   const { user } = useUser();
   const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
   const [newValues, setNewValues] = useState({
@@ -41,11 +41,11 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           weight,
           reps,
           sets,
-          timestamp,
+          date,
+          notes,
           exercise:exercises(id, name)
         `)
         .eq('exercise_id', exerciseId)
-        
         
       if (data) {
         const formattedExercises = data.map(item => ({
@@ -53,13 +53,12 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           weight: item.weight,
           reps: item.reps,
           sets: item.sets,
-          date: item.timestamp,
+          date: item.date,
+          notes: item.notes,
           name: item.exercise!.name
         }));
         setExercises(formattedExercises);
       }
-
-      
     };
 
     fetchExercises();
@@ -72,9 +71,10 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
     const supabase = createClient();
     
     const updates = {
-      weight: values.weight ? parseFloat(values.weight) : null,
+      weight: values.weight ? parseInt(values.weight) : null,
       reps: values.reps ? parseInt(values.reps) : null,
-      sets: values.sets ? parseInt(values.sets) : null
+      sets: values.sets ? parseInt(values.sets) : null,
+      date: new Date().toISOString().split('T')[0]
     };
 
     if (id === null) {
@@ -93,7 +93,8 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           weight,
           reps,
           sets,
-          timestamp,
+          date,
+          notes,
           exercise:exercises(id, name)
         `)
         .single();
@@ -104,7 +105,8 @@ export function WorkoutTable({ exerciseId, workoutId }: WorkoutTableProps) {
           weight: data.weight,
           reps: data.reps,
           sets: data.sets,
-          date: data.timestamp,
+          date: data.date,
+          notes: data.notes,
           name: data.exercise!.name
         }, ...exercises]);
         setNewValues({ weight: '', reps: '', sets: '' });

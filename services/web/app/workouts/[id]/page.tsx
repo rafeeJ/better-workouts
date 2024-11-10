@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkoutTable } from "@/components/workouts/workout-table";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 
 interface PageProps {
   params: Promise<{
@@ -40,8 +42,7 @@ export default async function WorkoutPage({ params }: PageProps) {
               weight,
               reps,
               sets,
-              notes,
-              timestamp
+              notes
             )
           )
         )
@@ -93,7 +94,7 @@ export default async function WorkoutPage({ params }: PageProps) {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold">
-                  Workout on {new Date(workout.workout_date).toLocaleDateString()}
+                  Workout on {format(new Date(workout.workout_date), 'do MMMM yyyy')}
                 </h1>
                 {workout.preset && (
                   <p className="text-sm text-muted-foreground mt-1">
@@ -115,8 +116,6 @@ export default async function WorkoutPage({ params }: PageProps) {
                     </div>
                     <WorkoutTable 
                       exerciseId={item.exercise.id} 
-                      workoutId={workout.id}
-                      logs={item.logs}
                     />
                   </div>
                 ))}

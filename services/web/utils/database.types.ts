@@ -34,17 +34,17 @@ export type Database = {
         Row: {
           exercise_id: number
           id: number
-          preset_id: number
+          preset_id: string
         }
         Insert: {
           exercise_id: number
           id?: number
-          preset_id: number
+          preset_id: string
         }
         Update: {
           exercise_id?: number
           id?: number
-          preset_id?: number
+          preset_id?: string
         }
         Relationships: [
           {
@@ -66,19 +66,19 @@ export type Database = {
       presets: {
         Row: {
           description: string | null
-          id: number
+          id: string
           name: string
           user_id: string
         }
         Insert: {
           description?: string | null
-          id?: number
+          id?: string
           name: string
           user_id: string
         }
         Update: {
           description?: string | null
-          id?: number
+          id?: string
           name?: string
           user_id?: string
         }
@@ -86,32 +86,35 @@ export type Database = {
       }
       workout_logs: {
         Row: {
+          created_at: string
+          date: string
           exercise_id: number
           id: number
           notes: string | null
           reps: number | null
           sets: number | null
-          timestamp: string
           user_id: string
           weight: number | null
         }
         Insert: {
+          created_at?: string
+          date: string
           exercise_id: number
           id?: number
           notes?: string | null
           reps?: number | null
           sets?: number | null
-          timestamp?: string
           user_id: string
           weight?: number | null
         }
         Update: {
+          created_at?: string
+          date?: string
           exercise_id?: number
           id?: number
           notes?: string | null
           reps?: number | null
           sets?: number | null
-          timestamp?: string
           user_id?: string
           weight?: number | null
         }
@@ -128,22 +131,22 @@ export type Database = {
       workouts: {
         Row: {
           created_at: string
-          id: number
-          preset_id: number
+          id: string
+          preset_id: string
           user_id: string
           workout_date: string
         }
         Insert: {
           created_at?: string
-          id?: number
-          preset_id: number
+          id?: string
+          preset_id: string
           user_id: string
           workout_date: string
         }
         Update: {
           created_at?: string
-          id?: number
-          preset_id?: number
+          id?: string
+          preset_id?: string
           user_id?: string
           workout_date?: string
         }
