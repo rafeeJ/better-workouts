@@ -33,7 +33,7 @@ export const Exercises = () => {
               <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
               <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
               <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
-              <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
+              <th className="h-12 px-4 text-left align-middle font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -58,7 +58,7 @@ export const Exercises = () => {
                       onClick={() => router.push(`/exercises/${exercise.id}`)}
                       className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
-                      View
+                      View Progress
                     </button>
                   </td>
                 </tr>

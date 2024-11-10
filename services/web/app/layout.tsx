@@ -54,6 +54,12 @@ export default function RootLayout({
                     >
                       Library
                     </Link>
+                    <Link 
+                      href={"/exercises"} 
+                      className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
+                    >
+                      Exercises
+                    </Link>
                   </div>
                   <HeaderAuth />
                 </div>
