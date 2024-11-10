@@ -69,7 +69,7 @@ export default async function WorkoutPage({ params }: PageProps) {
   })) || [];
 
   return (
-    <div className="container py-8">
+    <div className="container py-4 md:py-8 px-4 md:px-6">
       <div className="mb-4">
         <Link 
           href="/workouts" 
@@ -88,12 +88,12 @@ export default async function WorkoutPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <div className="space-y-6">
-        <div className="bg-card rounded-lg p-6 shadow-sm">
+      <div className="space-y-4 md:space-y-6">
+        <div className="bg-card rounded-lg p-4 md:p-6 shadow-sm">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-xl md:text-2xl font-bold break-words">
                   Workout on {format(new Date(workout.workout_date), 'do MMMM yyyy')}
                 </h1>
                 {workout.preset && (
@@ -102,21 +102,37 @@ export default async function WorkoutPage({ params }: PageProps) {
                   </p>
                 )}
               </div>
+              <form action={async () => {
+                'use server'
+                const supabase = await createClient();
+                await supabase.from("workouts").delete().eq("id", id);
+                redirect('/workouts');
+              }}>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  className="w-full sm:w-auto text-sm"
+                >
+                  Delete Workout
+                </Button>
+              </form>
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <div className="space-y-8">
+              <div className="space-y-6 md:space-y-8">
                 {exercises.map((item: any) => (
                   <div key={item.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">{item.exercise.name}</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="text-base md:text-lg font-medium">{item.exercise.name}</h3>
                       <span className="text-sm text-muted-foreground">
                         ({item.exercise.type})
                       </span>
                     </div>
-                    <WorkoutTable 
-                      exerciseId={item.exercise.id} 
-                    />
+                    <div className="overflow-x-auto">
+                      <WorkoutTable 
+                        exerciseId={item.exercise.id} 
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

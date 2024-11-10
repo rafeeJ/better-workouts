@@ -143,7 +143,7 @@ export default function WorkoutCalendar() {
     };
   
     return (
-      <div className="container py-8">
+      <div className="container">
         <div className="rounded-md border p-4">
           <div className="flex justify-between items-center mb-4">
             <Button variant="ghost" onClick={previousMonth}>
