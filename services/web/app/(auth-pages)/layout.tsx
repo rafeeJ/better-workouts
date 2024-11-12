@@ -4,6 +4,10 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="max-w-7xl flex flex-col gap-12 items-start">{children}</div>
+    <main className="flex w-full items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-6 rounded-lg border bg-card p-6 shadow-sm">
+        {children}
+      </div>
+    </main>
   );
 }
