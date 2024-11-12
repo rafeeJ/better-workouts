@@ -27,7 +27,7 @@ export const PresetList = async () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div className="rounded-md border">
         <Table>
           <TableHeader>
