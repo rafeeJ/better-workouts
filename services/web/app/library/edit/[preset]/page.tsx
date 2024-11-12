@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
 import { AvailableExercises } from "@/components/library/available-exercises";
-import { revalidatePath } from "next/cache";
 import { deletePresetExercise, deletePreset } from "@/app/actions"
 
 interface PageProps {
@@ -151,9 +150,4 @@ export default async function PresetPage({ params }: PageProps) {
       </div>
     </div>
   );
-}
-
-// Add loading state
-export function loading() {
-  return <div>Loading preset details...</div>;
 }
