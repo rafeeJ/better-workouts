@@ -53,7 +53,10 @@ export function WorkoutTable({ exerciseId }: WorkoutTableProps) {
         .limit(1);
         
       if (data && data[0]) {
-        setLastEntry(data[0]);
+        setLastEntry({
+          ...data[0],
+          name: data[0].exercise?.name || ''
+        });
       }
     };
 

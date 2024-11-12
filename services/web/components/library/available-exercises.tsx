@@ -32,7 +32,7 @@ export const AvailableExercises = ({ presetId }: AvailableExercisesProps) => {
       .from('preset_exercises')
       .insert({
         preset_id: presetId,
-        exercise_id: exerciseId
+        exercise_id: parseInt(exerciseId)
       });
 
     if (!error) {

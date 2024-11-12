@@ -59,7 +59,8 @@ export default function WorkoutCalendar() {
             )
           `)
           .gte('workout_date', startDate)
-          .lte('workout_date', endDate);
+          .lte('workout_date', endDate)
+          .returns<Workout[]>();
         
         setMonthWorkouts(data || []);
 
@@ -137,12 +138,12 @@ export default function WorkoutCalendar() {
       requireUser(user)
       
       const supabase = createClient();
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('workouts')
         .insert({
-          user_id: user.id,
+          user_id: user.id.toString(),
           workout_date: format(selectedDate!, 'yyyy-MM-dd'),
-          preset_id: presetId
+          preset_id: presetId.toString()
         })
         .select('id')
         .single();

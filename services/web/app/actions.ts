@@ -134,7 +134,7 @@ export async function revalidatePreset(presetId: string) {
   revalidatePath(`/library/edit/${presetId}`)
 }
 
-export async function deletePresetExercise(presetExerciseId: number, presetId: number) {
+export async function deletePresetExercise(presetExerciseId: number, presetId: string) {
   const supabase = await createClient()
   
   const { error } = await supabase
@@ -149,7 +149,7 @@ export async function deletePresetExercise(presetExerciseId: number, presetId: n
   return { error }
 }
 
-export async function deletePreset(presetId: number) {
+export async function deletePreset(presetId: string) {
   const supabase = await createClient();
   
   // First delete all preset exercises
